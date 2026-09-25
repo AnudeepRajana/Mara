@@ -108,35 +108,9 @@ body::before{
 .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums}
 
 body.ingame .nav{display:none}
-/* the sound toggle sits in the same top-right corner the in-game header uses
-   for its own "..." details button -- there's no free space in that row
-   (back, home, title and details already fill it edge to edge), so rather
-   than risk a partial fix, the toggle simply steps aside during play and
-   comes back the moment you're on a page that isn't mid-game. The same
-   problem exists, worse, against every full-screen overlay in the app --
-   kurama, the verdict screen, the station-card scrim, maraline, the defeat
-   poster and the rules panel all sit at a far higher z-index than the toggle
-   and were silently swallowing clicks meant for it. Hiding it whenever any
-   of those is actually open is simpler and more robust than trying to give
-   it a z-index that outranks every overlay without ever visually colliding
-   with one of their own corner elements (the rules panel's own close button
-   sits in that exact corner, for one). */
-body.ingame .soundtoggle,
-body:has(.kurama.on) .soundtoggle,
-body:has(.verdict.on) .soundtoggle,
-body:has(.tscrim.open) .soundtoggle,
-body:has(.maraline.on) .soundtoggle,
-body:has(.defeatposter.on) .soundtoggle,
-body:has(.rulewrap.open) .soundtoggle
-{display:none}
 .nav{position:sticky;top:0;z-index:60;background:rgba(11,10,8,.97);
   backdrop-filter:blur(12px);border-bottom:1px solid var(--edge);margin-bottom:20px;
   padding-top:env(safe-area-inset-top)}
-.soundtoggle{position:fixed;top:calc(59px + env(safe-area-inset-top));right:12px;z-index:55;
-  width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-  background:rgba(11,10,8,.85);border:1px solid var(--edge);backdrop-filter:blur(8px);
-  font-size:16px;opacity:.75;transition:opacity .2s}
-.soundtoggle:active{opacity:1}
 /* Inside the mobile app the frame is scrolled by the host, so sticky never
    engages and a top-only nav scrolls away for good. This one always sits in
    flow at the end of the page, so navigation is reachable from anywhere. */
@@ -1263,7 +1237,6 @@ tbody tr.inzone td:first-child{color:var(--ember);font-weight:800}
   <button data-p="practice">Practice</button>
   <button data-p="table">IQ</button>
 </div></nav>
-<button class="soundtoggle" id="soundtoggle" aria-label="Toggle sound" title="Sound">&#128264;</button>
 
 <div class="wrap">
 
@@ -1774,19 +1747,12 @@ const Snd = {
     document.addEventListener('pointerdown', boot, {once:true});
   },
   start(){
-    if(this.started || this.muted) return;
-    this.started = true;
-    const AC = window.AudioContext || window.webkitAudioContext;
-    if(!AC) return;
-    this.ctx = new AC();
-    this.master = this.ctx.createGain();
-    this.master.gain.value = 0;
-    this.master.connect(this.ctx.destination);
-    this.master.gain.linearRampToValueAtTime(0.11, this.ctx.currentTime + 4);
-    this.buildEcho();
-    this.buildDrone();
-    this.scheduleChimes();
-    if(document.body.classList.contains('tableon')) this.startTableDrums();
+    /* sound is fully retired -- the low drone came out as a buzz/vibration
+       on phone speakers and two rounds of tuning it didn't land. Cutting it
+       here, at the one place everything else flows through, means nothing
+       downstream (chimes, echo, drums, the table's beat) ever fires, since
+       none of it can run without a context that now never gets created. */
+    return;
   },
   buildEcho(){
     /* a feedback delay, not a recording -- each repeat passes back through a
@@ -1886,7 +1852,7 @@ const Snd = {
     noise.start(t);
   },
   startTableDrums(){
-    if(this.drumTimer) return;
+    if(this.drumTimer || !this.ctx) return;
     let n = 0;
     const beat = ()=>{
       if(!this.muted) this.playDrum(n%2===1);
@@ -1913,7 +1879,6 @@ const Snd = {
   }
 };
 Snd.init();
-document.getElementById('soundtoggle').onclick = ()=>Snd.toggle();
 $('defeatposter-tap').onclick = ()=>{ resetSeason(); };
 
 let ME=null;                         /* {id,name} */
