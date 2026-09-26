@@ -2185,7 +2185,13 @@ function cnt(b,s){let n=0;for(const row of b)for(const v of row)if(side(v)===s)n
 function ev(b){const k=king(b);if(!k)return 900;if(isC(k[0],k[1]))return -900;if(kcap(b))return 900;
  let s=cnt(b,A)*10-cnt(b,D)*12,best=99;
  for(const[cr,cc]of CO)best=Math.min(best,Math.abs(k[0]-cr)+Math.abs(k[1]-cc));
- return s+best*5;}
+ /* distance-to-corner alone can't tell "genuinely boxed in" from "far away but
+    wide open" -- two kings the same distance from a corner score identically
+    here even when one has zero real escape squares and the other has a dozen.
+    Counting the king's own current mobility gives attackers real credit for
+    closing lines, not just for standing near the king. */
+ const mobility=from(b,k[0],k[1]).length;
+ return s+best*5-mobility*4;}
 function score(b,mv,s){const nb=clone(b);apply(nb,mv[0],mv[1],mv[2],mv[3]);
  const w=win(nb,s===A?D:A);
  if(w===s)return 900;if(w)return -900;
