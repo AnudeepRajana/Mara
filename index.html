@@ -2179,7 +2179,14 @@ function kcap(b){const k=king(b);if(!k)return true;const[r,c]=k;
   if(b[nr][nc]===A||isC(nr,nc)||(isT(nr,nc)&&b[nr][nc]===E))n++;}
  return n>=3;}
 function win(b,stm){const k=king(b);if(!k)return A;if(isC(k[0],k[1]))return D;
- if(kcap(b))return A;if(all(b,stm).length===0)return stm===A?D:A;return 0;}
+ /* kcap() was being checked unconditionally, so the king could be "captured"
+    by walking into a surrounded square himself, with neither attacker having
+    just moved. Real tafl doesn't allow that -- a capture has to be sprung by
+    the attacker's own move, the same way you can walk a piece between two
+    enemies in checkers-like games without it being taken. stm is whoever
+    moves NEXT, so the attacker just moved only when stm is the defender. */
+ if(stm===D&&kcap(b))return A;
+ if(all(b,stm).length===0)return stm===A?D:A;return 0;}
 function cnt(b,s){let n=0;for(const row of b)for(const v of row)if(side(v)===s)n++;return n;}
 function ev(b){const k=king(b);if(!k)return 900;if(isC(k[0],k[1]))return -900;if(kcap(b))return 900;
  let s=cnt(b,A)*10-cnt(b,D)*12,best=99;
@@ -2208,6 +2215,7 @@ return{id:"brandubh",name:"Brandubh",sub:"Ireland \u00b7 c. 700 AD",N,E,kcap,kin
 <li><b>To capture, sandwich.</b> Get one of your pieces on each side of an enemy, straight across from each other. It has to be YOUR move that closes the trap &mdash; walking yourself between two enemies is completely safe.</li>
 <li><b>A corner or the centre also counts as one "side."</b> So the king only needs two hunters if he is standing next to a corner or the empty centre square.</li>
 <li><b>The king alone needs three sides closed</b>, not two, since he is stronger than an ordinary piece.</li>
+<li><b>Only an attacker's own move can spring the trap.</b> The king can safely walk into a square between two attackers, or next to the empty centre with one attacker already there &mdash; nothing happens until an attacker actually closes the third side himself.</li>
 </ol>
 <p class="win"><b>King reaches any corner</b> &rarr; his side wins. <b>King is surrounded, or his side has no legal move at all</b> &rarr; the hunters win. <b>70 moves pass with no piece taken on either side</b> &rarr; a draw &mdash; nobody broke through.</p>`};
 })();
